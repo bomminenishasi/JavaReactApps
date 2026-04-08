@@ -65,7 +65,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         logout();
-        return Promise.reject(refreshError);
+        return Promise.reject(new Error('SESSION_EXPIRED'));
       } finally {
         isRefreshing = false;
       }

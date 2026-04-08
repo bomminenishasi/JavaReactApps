@@ -1,8 +1,8 @@
 # Build stage
-FROM node:20-alpine AS build
+FROM node:18-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+COPY package.json ./
+RUN npm install --legacy-peer-deps && npm install ajv@^8 --legacy-peer-deps
 COPY . .
 RUN npm run build
 

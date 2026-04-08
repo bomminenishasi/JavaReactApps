@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transactions")
@@ -47,10 +47,10 @@ public class Transaction {
 
     @Column(name = "created_at", updatable = false)
     @Builder.Default
-    private Instant createdAt = Instant.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "processed_at")
-    private Instant processedAt;
+    private LocalDateTime processedAt;
 
     public enum TransactionType {
         TRANSFER, DEPOSIT, WITHDRAWAL, PAYMENT

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box, Button, Card, CardContent, Typography, Grid, Chip, Dialog,
   DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Alert,
@@ -6,16 +7,19 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { fetchAccounts, createAccount } from '../features/accounts/accountsSlice';
+import { Account } from '../types';
 import AppLayout from '../components/layout/AppLayout';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const AccountsPage: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const { accounts, loading } = useAppSelector((state) => state.accounts);
+  const dispatch  = useAppDispatch();
+  const location  = useLocation();
+  const { accounts, loading } = useAppSelector((state: any) => state.accounts);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [accountType, setAccountType] = useState<'SAVINGS' | 'CHECKING'>('SAVINGS');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const redirectInfo = (location.state as any)?.info ?? '';
 
   useEffect(() => { dispatch(fetchAccounts()); }, [dispatch]);
 
@@ -34,6 +38,9 @@ const AccountsPage: React.FC = () => {
 
   return (
     <AppLayout>
+      {redirectInfo && (
+        <Alert severity="info" sx={{ mb: 2 }}>{redirectInfo}</Alert>
+      )}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box>
           <Typography variant="h4" fontWeight={700}>Accounts</Typography>
@@ -55,7 +62,7 @@ const AccountsPage: React.FC = () => {
         </Card>
       ) : (
         <Grid container spacing={3}>
-          {accounts.map((account) => (
+          {accounts.map((account: Account) => (
             <Grid item xs={12} md={6} lg={4} key={account.accountId}>
               <Card>
                 <CardContent>

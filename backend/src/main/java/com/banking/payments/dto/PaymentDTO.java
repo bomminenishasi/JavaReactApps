@@ -3,7 +3,7 @@ package com.banking.payments.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 
 @Data
@@ -15,5 +15,5 @@ public class PaymentDTO {
     private BigDecimal amount;
     private LocalDate scheduledDate;
     private String status;
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 }

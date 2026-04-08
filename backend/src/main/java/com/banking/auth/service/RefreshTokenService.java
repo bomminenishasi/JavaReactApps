@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -26,7 +26,7 @@ public class RefreshTokenService {
         RefreshToken token = RefreshToken.builder()
             .user(user)
             .token(UUID.randomUUID().toString())
-            .expiresAt(Instant.now().plusMillis(refreshExpirationMs))
+            .expiresAt(LocalDateTime.now().plusNanos(refreshExpirationMs * 1_000_000L))
             .revoked(false)
             .build();
         return refreshTokenRepository.save(token);
@@ -39,7 +39,7 @@ public class RefreshTokenService {
         if (token.isRevoked()) {
             throw new BusinessException("Refresh token has been revoked");
         }
-        if (token.getExpiresAt().isBefore(Instant.now())) {
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
             refreshTokenRepository.delete(token);
             throw new BusinessException("Refresh token has expired");
         }

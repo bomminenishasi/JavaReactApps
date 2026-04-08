@@ -39,7 +39,10 @@ export const createAccount = createAsyncThunk('accounts/create', async (request:
     const { data } = await axiosInstance.post<{ data: Account }>('/api/accounts', request);
     return data.data;
   } catch (err: any) {
-    return rejectWithValue(err.response?.data?.message || 'Failed to create account');
+    if (err?.message === 'SESSION_EXPIRED') {
+      return rejectWithValue('Your session has expired. Please log in again and resubmit.');
+    }
+    return rejectWithValue(err.response?.data?.message || 'Failed to create account. Please try again.');
   }
 });
 

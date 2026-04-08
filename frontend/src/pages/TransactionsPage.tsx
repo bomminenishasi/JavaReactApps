@@ -120,7 +120,7 @@ const TransactionsPage: React.FC = () => {
                     <TableRow key={txn.txnId}>
                       <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{txn.referenceNo.slice(0, 8)}...</TableCell>
                       <TableCell><Chip label={txn.txnType} size="small" /></TableCell>
-                      <TableCell fontWeight={600}>${Number(txn.amount).toFixed(2)}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>${Number(txn.amount).toFixed(2)}</TableCell>
                       <TableCell><Chip label={txn.status} size="small" color={statusColor(txn.status) as any} /></TableCell>
                       <TableCell sx={{ fontSize: 12 }}>
                         {txn.fromAccountNumber ? `From: ${txn.fromAccountNumber}` : ''}

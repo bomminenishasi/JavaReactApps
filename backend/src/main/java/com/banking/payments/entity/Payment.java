@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payments")
@@ -46,7 +46,7 @@ public class Payment {
 
     @Column(name = "created_at", updatable = false)
     @Builder.Default
-    private Instant createdAt = Instant.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum PaymentStatus {
         SCHEDULED, PROCESSING, COMPLETED, CANCELLED, FAILED

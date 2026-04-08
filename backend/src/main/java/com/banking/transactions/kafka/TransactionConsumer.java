@@ -13,7 +13,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Component
@@ -46,14 +46,14 @@ public class TransactionConsumer {
             }
 
             txn.setStatus(Transaction.TransactionStatus.SUCCESS);
-            txn.setProcessedAt(Instant.now());
+            txn.setProcessedAt(LocalDateTime.now());
             transactionRepository.save(txn);
             transactionProducer.sendTransactionCompleted(event);
 
         } catch (Exception e) {
             log.error("Transaction processing failed: {}", e.getMessage());
             txn.setStatus(Transaction.TransactionStatus.FAILED);
-            txn.setProcessedAt(Instant.now());
+            txn.setProcessedAt(LocalDateTime.now());
             transactionRepository.save(txn);
             transactionProducer.sendTransactionFailed(event);
         }

@@ -93,7 +93,7 @@ const PaymentsPage: React.FC = () => {
                 ) : (
                   payments.map((payment) => (
                     <TableRow key={payment.paymentId}>
-                      <TableCell fontWeight={600}>{payment.payeeName}</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>{payment.payeeName}</TableCell>
                       <TableCell sx={{ fontSize: 12 }}>{payment.accountNumber}</TableCell>
                       <TableCell>${Number(payment.amount).toFixed(2)}</TableCell>
                       <TableCell>{payment.scheduledDate}</TableCell>

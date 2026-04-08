@@ -2,7 +2,7 @@ package com.banking.users.dto;
 
 import lombok.Data;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 public class UserDTO {
@@ -13,5 +13,5 @@ public class UserDTO {
     private String phone;
     private String role;
     private boolean isActive;
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 }

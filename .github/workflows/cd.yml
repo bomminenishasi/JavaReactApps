@@ -1,0 +1,110 @@
+name: CD — Build & Push Docker Images
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false   # never cancel a running deploy
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND:  ghcr.io/${{ github.repository_owner }}/banking-backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/banking-frontend
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Metadata ────────────────────────────────────────────────────────────
+      - name: Extract image metadata (backend)
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_BACKEND }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Extract image metadata (frontend)
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_FRONTEND }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      # ── Docker setup ────────────────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Build & push ────────────────────────────────────────────────────────
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags:   ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags:   ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy (example — adapt to your infra)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    # Only deploy on pushes to main (not tags — adjust as needed)
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Deploy via SSH
+        # Replace this step with your actual deployment mechanism
+        # (kubectl rollout, docker compose pull+up, Ansible, etc.)
+        run: |
+          echo "Deploy step — wire this to your actual infra."
+          echo "Backend image: ${{ env.IMAGE_BACKEND }}:latest"
+          echo "Frontend image: ${{ env.IMAGE_FRONTEND }}:latest"
+        # Example for docker-compose over SSH:
+        # uses: appleboy/ssh-action@v1
+        # with:
+        #   host:     ${{ secrets.DEPLOY_HOST }}
+        #   username: ${{ secrets.DEPLOY_USER }}
+        #   key:      ${{ secrets.DEPLOY_SSH_KEY }}
+        #   script: |
+        #     cd /opt/banking-app
+        #     docker compose pull
+        #     docker compose up -d --remove-orphans
