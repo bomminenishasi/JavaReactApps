@@ -1,0 +1,14 @@
+{
+  "validUser": {
+    "email": "cypress@securebank.com",
+    "password": "Cypress1!",
+    "firstName": "Cypress",
+    "lastName": "Test"
+  },
+  "invalidEmail": "not-an-email",
+  "weakPassword": "123",
+  "adminUser": {
+    "email": "admin@securebank.com",
+    "password": "Admin@123"
+  }
+}

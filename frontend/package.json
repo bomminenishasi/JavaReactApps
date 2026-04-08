@@ -27,6 +27,7 @@
     "@types/node": "^20.10.4",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
+    "cypress": "^13.6.1",
     "react-scripts": "5.0.1",
     "sass": "^1.69.5",
     "typescript": "^5.3.3"
@@ -35,7 +36,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run --headless"
   },
   "eslintConfig": {
     "extends": [
