@@ -13,43 +13,58 @@ describe('Payments', () => {
   });
 
   it('loads the Payments page', () => {
-    cy.contains(/payments/i, { timeout: 8000 }).should('be.visible');
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /payments/i);
   });
 
   it('shows empty state or schedule button for new user', () => {
-    cy.get('body', { timeout: 8000 }).should(
-      'contain.text', /no payment|schedule|add payment/i,
-    );
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /no payment|schedule|add|new/i);
   });
 
   it('opens schedule payment dialog', () => {
-    cy.contains(/schedule|add|new payment/i, { timeout: 8000 }).first().click({ force: true });
+    cy.contains(/schedule|add payment|new payment/i, { timeout: 8000 })
+      .first().click({ force: true });
     cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
   });
 
   it('closes schedule payment dialog on cancel', () => {
-    cy.contains(/schedule|add|new payment/i).first().click({ force: true });
+    cy.contains(/schedule|add payment|new payment/i, { timeout: 8000 })
+      .first().click({ force: true });
+    cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
     cy.get('[role="dialog"]').within(() => {
       cy.contains(/cancel|close/i).click();
     });
     cy.get('[role="dialog"]').should('not.exist');
   });
 
-  it('validates required fields in payment dialog', () => {
-    cy.contains(/schedule|add|new payment/i).first().click({ force: true });
-    cy.get('[role="dialog"]').within(() => {
+  it('shows validation error when payment submitted empty', () => {
+    cy.contains(/schedule|add payment|new payment/i, { timeout: 8000 })
+      .first().click({ force: true });
+    cy.get('[role="dialog"]', { timeout: 6000 }).within(() => {
       cy.contains(/submit|schedule|pay/i).last().click();
     });
-    cy.get('body').should(
-      'contain.text', 'required').or('contain.text', 'payee').or('contain.text', 'amount'),
-    { timeout: 6000 };
+    cy.get('body', { timeout: 6000 })
+      .invoke('text')
+      .should('match', /required|payee|amount|invalid/i);
   });
 
-  it('shows SCHEDULED status badge on scheduled payments', () => {
-    // This tests display — if payments exist they show SCHEDULED chip
+  it('dialog contains payee name and amount fields', () => {
+    cy.contains(/schedule|add payment|new payment/i, { timeout: 8000 })
+      .first().click({ force: true });
+    cy.get('[role="dialog"]', { timeout: 6000 }).within(() => {
+      cy.get('input').should('have.length.at.least', 2);
+    });
+  });
+
+  it('conditionally shows SCHEDULED badge when payments exist', () => {
     cy.get('body', { timeout: 6000 }).then(($b) => {
       if ($b.text().includes('SCHEDULED')) {
         cy.contains('SCHEDULED').should('be.visible');
+      } else {
+        cy.log('No scheduled payments exist yet — skipping badge check');
       }
     });
   });

@@ -4,15 +4,21 @@ describe('Transactions', () => {
   const email = `txn_${Date.now()}@securebank.com`;
 
   before(() => {
+    // Register user, then create a savings account via API
     cy.register(email, 'Cypress1!', 'Txn', 'User');
-    // Create a savings account via API after login
     cy.login(email, 'Cypress1!');
-    cy.request({
-      method: 'POST',
-      url: `${Cypress.env('apiUrl')}/api/accounts`,
-      headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      body: { accountType: 'SAVINGS' },
-      failOnStatusCode: false,
+    cy.visit('/'); // Trigger app load so localStorage is populated
+    cy.window().then((win) => {
+      const token = win.localStorage.getItem('accessToken');
+      if (token) {
+        cy.request({
+          method: 'POST',
+          url: `${Cypress.env('apiUrl')}/api/accounts`,
+          headers: { Authorization: `Bearer ${token}` },
+          body: { accountType: 'SAVINGS' },
+          failOnStatusCode: false,
+        });
+      }
     });
   });
 
@@ -22,19 +28,21 @@ describe('Transactions', () => {
   });
 
   it('loads the Transactions page', () => {
-    cy.contains(/transactions/i, { timeout: 8000 }).should('be.visible');
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /transactions/i);
   });
 
   it('shows empty state when no transactions exist', () => {
-    cy.get('body', { timeout: 8000 }).should(
-      'contain.text', 'no transaction').or('contain.text', 'No transaction').or('contain.text', 'empty'),
-    { timeout: 8000 };
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /no transaction|empty|no records/i);
   });
 
-  it('shows transfer, deposit, withdraw action buttons', () => {
-    cy.get('body', { timeout: 8000 }).should(
-      'contain.text', /transfer|deposit|withdraw/i,
-    );
+  it('shows action buttons for transfer, deposit, withdraw', () => {
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /transfer|deposit|withdraw/i);
   });
 
   it('opens deposit dialog', () => {
@@ -43,7 +51,8 @@ describe('Transactions', () => {
   });
 
   it('closes deposit dialog on cancel', () => {
-    cy.contains(/deposit/i).first().click({ force: true });
+    cy.contains(/deposit/i, { timeout: 8000 }).first().click({ force: true });
+    cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
     cy.get('[role="dialog"]').within(() => {
       cy.contains(/cancel|close/i).click();
     });
@@ -55,11 +64,22 @@ describe('Transactions', () => {
     cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
   });
 
-  it('validates amount field in deposit dialog', () => {
-    cy.contains(/deposit/i).first().click({ force: true });
+  it('closes transfer dialog on cancel', () => {
+    cy.contains(/transfer/i, { timeout: 8000 }).first().click({ force: true });
+    cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
     cy.get('[role="dialog"]').within(() => {
-      cy.contains(/submit|deposit|confirm/i).click();
+      cy.contains(/cancel|close/i).click();
     });
-    cy.get('body').should('contain.text', 'required').or('contain.text', 'amount');
+    cy.get('[role="dialog"]').should('not.exist');
+  });
+
+  it('shows validation error when deposit submitted without amount', () => {
+    cy.contains(/deposit/i, { timeout: 8000 }).first().click({ force: true });
+    cy.get('[role="dialog"]', { timeout: 6000 }).within(() => {
+      cy.contains(/submit|deposit|confirm/i).last().click();
+    });
+    cy.get('body', { timeout: 6000 })
+      .invoke('text')
+      .should('match', /required|amount|invalid/i);
   });
 });

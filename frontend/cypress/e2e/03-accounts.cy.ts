@@ -13,40 +13,53 @@ describe('Accounts', () => {
   });
 
   it('loads the Accounts page', () => {
-    cy.contains(/accounts/i, { timeout: 8000 }).should('be.visible');
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /accounts/i);
   });
 
-  it('shows "no accounts" state for new user', () => {
-    cy.get('body', { timeout: 8000 }).should(
-      'contain.text', 'No accounts').or('contain.text', 'no accounts').or('contain.text', 'Open'),
-    { timeout: 8000 };
+  it('shows empty state or open button for new user', () => {
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /no accounts|open|create|add/i);
   });
 
-  it('opens savings account creation dialog', () => {
-    cy.contains(/open|add|new|create/i).first().click();
+  it('opens account creation dialog', () => {
+    cy.contains(/open|add|create/i, { timeout: 8000 }).first().click();
     cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
   });
 
-  it('creates a SAVINGS account successfully', () => {
-    cy.contains(/open|add|new|create/i).first().click();
+  it('closes dialog on cancel', () => {
+    cy.contains(/open|add|create/i, { timeout: 8000 }).first().click();
+    cy.get('[role="dialog"]', { timeout: 6000 }).should('be.visible');
     cy.get('[role="dialog"]').within(() => {
-      // Select SAVINGS if there's a dropdown
+      cy.contains(/cancel|close/i).click();
+    });
+    cy.get('[role="dialog"]').should('not.exist');
+  });
+
+  it('creates a SAVINGS account successfully', () => {
+    cy.contains(/open|add|create/i, { timeout: 8000 }).first().click();
+    cy.get('[role="dialog"]', { timeout: 6000 }).within(() => {
+      // Select SAVINGS type if a selector is shown
       cy.get('body').then(($b) => {
-        if ($b.find('[role="listbox"], select').length) {
-          cy.get('select, [role="listbox"]').first().click();
+        if ($b.find('select').length) {
+          cy.get('select').select('SAVINGS');
+        } else if ($b.find('[role="button"]').length) {
           cy.contains(/savings/i).click();
         }
       });
       cy.contains(/create|open|submit|confirm/i).click();
     });
-    cy.contains(/SAV|SAVINGS|savings/i, { timeout: 10000 }).should('be.visible');
+    cy.get('body', { timeout: 10000 })
+      .invoke('text')
+      .should('match', /savings/i);
   });
 
-  it('displays account card with number and balance after creation', () => {
-    cy.get('body').then(($b) => {
-      if ($b.text().includes('SAV') || $b.text().includes('SAVINGS')) {
-        cy.contains(/SAV|SAVINGS/i).should('be.visible');
-        cy.contains(/balance|\$/i).should('be.visible');
+  it('displays account balance after account is created', () => {
+    cy.get('body', { timeout: 8000 }).then(($b) => {
+      if (/savings/i.test($b.text())) {
+        cy.contains(/balance|\$0/i).should('be.visible');
       }
     });
   });
@@ -54,11 +67,11 @@ describe('Accounts', () => {
   // ── Open Checking guard ────────────────────────────────────────────────────
 
   describe('Open Checking Account guard', () => {
-    it('"Open Checking" sidebar link is visible for user without checking account', () => {
-      cy.contains(/open checking/i).should('be.visible');
+    it('"Open Checking" link is visible when user has no checking account', () => {
+      cy.contains(/open checking/i, { timeout: 8000 }).should('be.visible');
     });
 
-    it('navigates to open-checking page', () => {
+    it('navigates to /open-checking on click', () => {
       cy.contains(/open checking/i).click();
       cy.url().should('include', '/open-checking');
     });

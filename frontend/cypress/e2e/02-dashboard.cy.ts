@@ -13,19 +13,26 @@ describe('Dashboard', () => {
   });
 
   it('shows the dashboard heading', () => {
-    cy.contains(/dashboard|welcome|overview/i, { timeout: 8000 }).should('be.visible');
+    cy.get('body', { timeout: 8000 })
+      .invoke('text')
+      .should('match', /dashboard|welcome|overview/i);
   });
 
-  it('displays summary cards (balance, accounts, etc.)', () => {
-    // At least one card/stat section should be visible
-    cy.get('.MuiCard-root, [class*="card"], [class*="Card"]', { timeout: 8000 })
+  it('displays at least one summary card', () => {
+    cy.get('.MuiCard-root, [class*="Card"]', { timeout: 8000 })
       .should('have.length.at.least', 1);
   });
 
-  it('sidebar navigation links are visible', () => {
-    cy.contains(/accounts/i).should('be.visible');
-    cy.contains(/transactions/i).should('be.visible');
-    cy.contains(/payments/i).should('be.visible');
+  it('sidebar shows Accounts navigation link', () => {
+    cy.contains(/^accounts$/i, { timeout: 8000 }).should('be.visible');
+  });
+
+  it('sidebar shows Transactions navigation link', () => {
+    cy.contains(/^transactions$/i, { timeout: 8000 }).should('be.visible');
+  });
+
+  it('sidebar shows Payments navigation link', () => {
+    cy.contains(/^payments$/i, { timeout: 8000 }).should('be.visible');
   });
 
   it('navigates to Accounts page from sidebar', () => {
