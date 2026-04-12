@@ -1,0 +1,261 @@
+version: '3.8'
+
+services:
+  # ─── Infrastructure ────────────────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - retail-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - retail-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - retail-network
+
+  oracle-db:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    environment:
+      ORACLE_PWD: RetailPass123
+      ORACLE_CHARACTERSET: AL32UTF8
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./infrastructure/oracle/init:/opt/oracle/scripts/startup
+    networks:
+      - retail-network
+
+  splunk:
+    image: splunk/splunk:latest
+    container_name: splunk
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+      - "9997:9997"
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_PASSWORD: SplunkPass123
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    volumes:
+      - splunk-data:/opt/splunk/var
+      - ./infrastructure/splunk:/opt/splunk/etc/system/local
+    networks:
+      - retail-network
+
+  # ─── Backend Microservices ──────────────────────────────────────────────────
+  api-gateway:
+    build: ./backend/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - cart-service
+      - payment-service
+      - inventory-service
+    networks:
+      - retail-network
+
+  graphql-bff:
+    build: ./backend/graphql-bff
+    container_name: graphql-bff
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      USER_SERVICE_URL: http://user-service:8082
+      PRODUCT_SERVICE_URL: http://product-service:8083
+      ORDER_SERVICE_URL: http://order-service:8084
+      CART_SERVICE_URL: http://cart-service:8085
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - cart-service
+    networks:
+      - retail-network
+
+  user-service:
+    build: ./backend/user-service
+    container_name: user-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: retail_user
+      SPRING_DATASOURCE_PASSWORD: RetailPass123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPLUNK_HEC_URL: http://splunk:8088
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    depends_on:
+      - oracle-db
+      - kafka
+    networks:
+      - retail-network
+
+  product-service:
+    build: ./backend/product-service
+    container_name: product-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: retail_product
+      SPRING_DATASOURCE_PASSWORD: RetailPass123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPLUNK_HEC_URL: http://splunk:8088
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    depends_on:
+      - oracle-db
+      - kafka
+    networks:
+      - retail-network
+
+  order-service:
+    build: ./backend/order-service
+    container_name: order-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: retail_order
+      SPRING_DATASOURCE_PASSWORD: RetailPass123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPLUNK_HEC_URL: http://splunk:8088
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    depends_on:
+      - oracle-db
+      - kafka
+    networks:
+      - retail-network
+
+  cart-service:
+    build: ./backend/cart-service
+    container_name: cart-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: retail_cart
+      SPRING_DATASOURCE_PASSWORD: RetailPass123
+      SPLUNK_HEC_URL: http://splunk:8088
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    depends_on:
+      - oracle-db
+    networks:
+      - retail-network
+
+  payment-service:
+    build: ./backend/payment-service
+    container_name: payment-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: retail_payment
+      SPRING_DATASOURCE_PASSWORD: RetailPass123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPLUNK_HEC_URL: http://splunk:8088
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    depends_on:
+      - oracle-db
+      - kafka
+    networks:
+      - retail-network
+
+  inventory-service:
+    build: ./backend/inventory-service
+    container_name: inventory-service
+    ports:
+      - "8087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: retail_inventory
+      SPRING_DATASOURCE_PASSWORD: RetailPass123
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPLUNK_HEC_URL: http://splunk:8088
+      SPLUNK_HEC_TOKEN: retail-hec-token-12345
+    depends_on:
+      - oracle-db
+      - kafka
+    networks:
+      - retail-network
+
+  notification-service:
+    build: ./backend/notification-service
+    container_name: notification-service
+    ports:
+      - "8089:8089"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      - kafka
+    networks:
+      - retail-network
+
+  # ─── Frontend ───────────────────────────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_GRAPHQL_URL: http://localhost:8081/graphql
+      REACT_APP_WS_URL: ws://localhost:8081/graphql
+    depends_on:
+      - graphql-bff
+    networks:
+      - retail-network
+
+volumes:
+  oracle-data:
+  splunk-data:
+
+networks:
+  retail-network:
+    driver: bridge

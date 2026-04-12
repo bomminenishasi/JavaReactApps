@@ -1,0 +1,37 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: graphql-bff
+  graphql:
+    websocket:
+      path: /graphql
+    path: /graphql
+    graphiql:
+      enabled: true
+      path: /graphiql
+
+# Downstream service URLs
+services:
+  user: ${USER_SERVICE_URL:http://localhost:8082}
+  product: ${PRODUCT_SERVICE_URL:http://localhost:8083}
+  order: ${ORDER_SERVICE_URL:http://localhost:8084}
+  cart: ${CART_SERVICE_URL:http://localhost:8085}
+  payment: ${PAYMENT_SERVICE_URL:http://localhost:8086}
+  inventory: ${INVENTORY_SERVICE_URL:http://localhost:8087}
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:retail-jwt-secret-key-shopease-2024-secure-256bits}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.shopease: DEBUG
+    org.springframework.graphql: INFO
