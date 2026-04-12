@@ -15,9 +15,9 @@ services:
       - oracle-data:/opt/oracle/oradata
       - ./docker/init.sql:/container-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "/bin/bash", "-c", "echo 'SELECT 1 FROM DUAL;' | sqlplus -s banking_user/BankingUser123@//localhost:1521/XEPDB1 | grep -q 1"]
+      test: ["CMD", "/bin/bash", "-c", "sqlplus -s banking_user/BankingUser123@//localhost:1521/XEPDB1 <<< 'SELECT 1 FROM DUAL;' | grep -q 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 15s
       retries: 10
 
   zookeeper:
@@ -45,9 +45,10 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 5
+      start_period: 30s
+      retries: 10
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
