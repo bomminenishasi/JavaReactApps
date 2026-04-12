@@ -20,7 +20,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -55,7 +55,7 @@ class AuthServiceTest {
         testRefreshToken = RefreshToken.builder()
                 .token("refresh-token-uuid")
                 .user(testUser)
-                .expiryDate(Instant.now().plusSeconds(604800))
+                .expiresAt(LocalDateTime.now().plusSeconds(604800))
                 .revoked(false)
                 .build();
     }
