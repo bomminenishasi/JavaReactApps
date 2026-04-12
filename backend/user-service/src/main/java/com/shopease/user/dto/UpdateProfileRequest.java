@@ -1,0 +1,15 @@
+package com.shopease.user.dto;
+
+import lombok.Data;
+
+@Data
+public class UpdateProfileRequest {
+    private String firstName;
+    private String lastName;
+    private String phone;
+    private String street;
+    private String city;
+    private String state;
+    private String zipCode;
+    private String country;
+}

@@ -1,0 +1,243 @@
+scalar DateTime
+scalar Long
+
+# ─── Auth ────────────────────────────────────────────────────────────────────
+type AuthResponse {
+  token: String!
+  refreshToken: String!
+  expiresIn: Long!
+  user: User!
+}
+
+input RegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  phone: String
+}
+
+# ─── User ────────────────────────────────────────────────────────────────────
+type User {
+  id: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  phone: String
+  address: Address
+  role: UserRole!
+  createdAt: DateTime
+}
+
+type Address {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  country: String!
+}
+
+input AddressInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  country: String!
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+# ─── Product ─────────────────────────────────────────────────────────────────
+type Product {
+  id: ID!
+  sku: String!
+  name: String!
+  description: String!
+  price: Float!
+  originalPrice: Float
+  category: Category!
+  brand: String!
+  images: [String!]!
+  rating: Float!
+  reviewCount: Int!
+  inStock: Boolean!
+  stockQuantity: Int!
+  tags: [String!]!
+  createdAt: DateTime
+}
+
+type ProductPage {
+  content: [Product!]!
+  totalElements: Int!
+  totalPages: Int!
+  currentPage: Int!
+  pageSize: Int!
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+  parentId: ID
+  imageUrl: String
+}
+
+input ProductFilterInput {
+  categoryId: ID
+  minPrice: Float
+  maxPrice: Float
+  brand: String
+  inStock: Boolean
+  search: String
+  sortBy: ProductSortBy
+  page: Int
+  size: Int
+}
+
+enum ProductSortBy {
+  PRICE_ASC
+  PRICE_DESC
+  RATING
+  NEWEST
+  POPULARITY
+}
+
+# ─── Cart ─────────────────────────────────────────────────────────────────────
+type Cart {
+  id: ID!
+  userId: ID!
+  items: [CartItem!]!
+  subtotal: Float!
+  tax: Float!
+  discount: Float!
+  total: Float!
+  itemCount: Int!
+  updatedAt: DateTime
+}
+
+type CartItem {
+  id: ID!
+  product: Product!
+  quantity: Int!
+  unitPrice: Float!
+  totalPrice: Float!
+}
+
+# ─── Order ────────────────────────────────────────────────────────────────────
+type Order {
+  id: ID!
+  orderNumber: String!
+  userId: ID!
+  items: [OrderItem!]!
+  shippingAddress: Address!
+  billingAddress: Address!
+  status: OrderStatus!
+  paymentStatus: PaymentStatus!
+  subtotal: Float!
+  tax: Float!
+  shippingCost: Float!
+  discount: Float!
+  total: Float!
+  estimatedDelivery: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type OrderItem {
+  id: ID!
+  productId: ID!
+  productName: String!
+  sku: String!
+  quantity: Int!
+  unitPrice: Float!
+  totalPrice: Float!
+}
+
+input CreateOrderInput {
+  userId: ID!
+  cartId: ID!
+  shippingAddress: AddressInput!
+  billingAddress: AddressInput!
+  paymentMethod: PaymentMethod!
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  PAYPAL
+  WALMART_PAY
+}
+
+type CancelResult {
+  id: ID!
+  orderNumber: String!
+  status: OrderStatus!
+}
+
+type LogoutResult {
+  success: Boolean!
+}
+
+# ─── Root Types ───────────────────────────────────────────────────────────────
+type Query {
+  # Auth / User
+  me: User
+
+  # Products
+  products(filter: ProductFilterInput): ProductPage
+  product(id: ID!): Product
+  searchProducts(query: String!, page: Int, size: Int): ProductPage
+  categories: [Category!]!
+
+  # Cart
+  cart(userId: ID!): Cart
+
+  # Orders
+  orders(userId: ID!): [Order!]!
+  order(id: ID!): Order
+}
+
+type Mutation {
+  # Auth
+  login(email: String!, password: String!): AuthResponse!
+  register(input: RegisterInput!): AuthResponse!
+  refreshToken(refreshToken: String!): AuthResponse!
+  logout: LogoutResult!
+
+  # Cart
+  addToCart(userId: ID!, productId: ID!, quantity: Int!): Cart
+  updateCartItem(cartItemId: ID!, quantity: Int!): Cart
+  removeFromCart(cartItemId: ID!): Cart
+  clearCart(userId: ID!): Cart
+
+  # Orders
+  createOrder(input: CreateOrderInput!): Order!
+  cancelOrder(orderId: ID!, reason: String): CancelResult!
+}
+
+type Subscription {
+  orderStatusUpdated(orderId: ID!): Order!
+  cartUpdated(userId: ID!): Cart!
+}
